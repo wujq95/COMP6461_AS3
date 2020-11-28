@@ -253,7 +253,7 @@ public class UDPClient {
             //logger.info("Router: {}", router);
             String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
             //logger.info("Payload: {}",  payload);
-            //System.out.println("client payload:"+payload);
+            System.out.println("client payload:"+payload);
             res = Arrays.asList(payload.split("\n"));
 
             keys.clear();
