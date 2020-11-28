@@ -1,3 +1,5 @@
+package client;
+
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -219,7 +221,6 @@ public class UDPClient {
             msg +="\r\n";
             msg += data;
 
-
             Packet p = new Packet.Builder()
                     .setType(0)
                     .setSequenceNumber(1L)
@@ -229,18 +230,15 @@ public class UDPClient {
                     .create();
             channel.send(p.toBuffer(), routerAddr);
 
-            //logger.info("Sending \"{}\" to router at {}", msg, routerAddr);
-
             // Try to receive a packet within timeout.
             channel.configureBlocking(false);
             Selector selector = Selector.open();
             channel.register(selector, OP_READ);
-            //logger.info("Waiting for the response");
             selector.select(5000);
 
             Set<SelectionKey> keys = selector.selectedKeys();
             if(keys.isEmpty()){
-                //logger.error("No response after timeout");
+                System.out.println("No response after timeout");
                 return;
             }
 
@@ -249,19 +247,10 @@ public class UDPClient {
             SocketAddress router = channel.receive(buf);
             buf.flip();
             Packet resp = Packet.fromBuffer(buf);
-            //logger.info("Packet: {}", resp);
-            //logger.info("Router: {}", router);
             String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
-            //logger.info("Payload: {}",  payload);
-            System.out.println("client payload:"+payload);
-            res = Arrays.asList(payload.split("\n"));
-
+            res = Arrays.asList(payload.split("\r\n"));
             keys.clear();
         }
-
-
-
-
         if(res.size()==0){
             System.out.println("No response");
             return;
@@ -302,7 +291,7 @@ public class UDPClient {
      * @param res
      * @throws IOException
      */
-    public void outputResult(Request request,List<String> res) throws IOException {
+    public void outputResult(Request request, List<String> res) throws IOException {
         if(request.getOutPutFile()!=null){
             FileWriter fileWriter = new FileWriter(request.getOutPutFile());
             PrintWriter printWriter = new PrintWriter(fileWriter);
@@ -342,55 +331,6 @@ public class UDPClient {
             }
         }
     }
-
-    //private static final Logger logger = LoggerFactory.getLogger(UDPClient.class);
-
-    private static void runClient() throws IOException {
-        SocketAddress routerAddr = new InetSocketAddress("localhost", 3000);
-
-        //这里要处理
-        InetSocketAddress serverAddr = new InetSocketAddress("localhost", 8007);
-        try(DatagramChannel channel = DatagramChannel.open()){
-            String msg = "Hello World";
-            Packet p = new Packet.Builder()
-                    .setType(0)
-                    .setSequenceNumber(1L)
-                    .setPortNumber(serverAddr.getPort())
-                    .setPeerAddress(serverAddr.getAddress())
-                    .setPayload(msg.getBytes())
-                    .create();
-            channel.send(p.toBuffer(), routerAddr);
-
-            //logger.info("Sending \"{}\" to router at {}", msg, routerAddr);
-
-            // Try to receive a packet within timeout.
-            channel.configureBlocking(false);
-            Selector selector = Selector.open();
-            channel.register(selector, OP_READ);
-            //logger.info("Waiting for the response");
-            selector.select(5000);
-
-            Set<SelectionKey> keys = selector.selectedKeys();
-            if(keys.isEmpty()){
-                //logger.error("No response after timeout");
-                return;
-            }
-
-            // We just want a single response.
-            ByteBuffer buf = ByteBuffer.allocate(Packet.MAX_LEN);
-            SocketAddress router = channel.receive(buf);
-            buf.flip();
-            Packet resp = Packet.fromBuffer(buf);
-            //logger.info("Packet: {}", resp);
-            //logger.info("Router: {}", router);
-            String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
-            //logger.info("Payload: {}",  payload);
-            System.out.println("client payload:"+payload);
-
-            keys.clear();
-        }
-    }
-
 
     /**
      * check url format

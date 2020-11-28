@@ -1,3 +1,5 @@
+package client;
+
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -5,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Packet represents a simulated network packet.
+ * client.Packet represents a simulated network packet.
  * As we don't have unsigned types in Java, we can achieve this by using a larger type.
  */
 public class Packet {
