@@ -8,8 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.DatagramChannel;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public class UDPServer {
 
     private static Integer port = 8007;

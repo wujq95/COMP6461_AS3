@@ -47,8 +47,15 @@ class serverThread extends Thread{
     public Response createResponse(Request request) throws IOException {
         Response response = new Response();
         String path = request.getPath();
+        if(!checkPath(path)){
+            //讨论404还是400等
+            response.setCode(400);
+            response.setPhrase("Bad Request: Wrong Path");
+            return response;
+        }
+
         if(request.getMethod().toLowerCase().equals("get")){
-            if(path.equals("/")){
+            if(path.endsWith("/")){
                 response.setCode(200);
                 response.setPhrase("OK");
                 response.setHeaders("content-type: text/plain");
@@ -56,11 +63,13 @@ class serverThread extends Thread{
                 File dir = new File(fileDirectory);
                 File[] list = dir.listFiles();
                 for(File f: list){
-                    response.setData(f.getName());
+                    if(f.isFile()){
+                        response.setData(f.getName());
+                    }
                 }
             }else {
-                File file = new File(fileDirectory + path);
-                if(file.exists()){
+                File file = new File("file" + path);
+                if(file.exists()&&file.isFile()){
                     String headContent = "Content-type: text/plain";
                     if(path.endsWith(".html")){
                         headContent = "Content-type: text/html";
@@ -84,20 +93,26 @@ class serverThread extends Thread{
                 }
             }
         }else if(request.getMethod().toLowerCase().equals("post")){
-            if(path.equals("/")) {
+            if(path.endsWith("/")) {
                 response.setCode(400);
                 response.setPhrase("Bad Request");
             }else{
-                File file = new File(fileDirectory + path);
+                File file = new File("file" + path);
                 if(!file.exists()){
                      file.createNewFile();
+                }
+                if(!file.isFile()){
+                    //同上
+                    response.setCode(400);
+                    response.setPhrase("Bad Request");
+                    return response;
                 }
                 response.setCode(200);
                 response.setPhrase("OK");
                 String data = request.getData();
                 FileWriter fw;
                 try{
-                    fw = new FileWriter(fileDirectory + path);
+                    fw = new FileWriter("file" + path);
                     fw.write(data);
                     fw.flush();
                     fw.close();
@@ -130,21 +145,11 @@ class serverThread extends Thread{
         }
 
         if(request.getMethod().toLowerCase().equals("post")){
-            /*List<String> list = request.getHeaders();
-            int length=0;
-            for(String string: list){
-                if(string.startsWith("Content-Length")){
-                    String[] s = string.split(":");
-                    length = Integer.parseInt(s[1].replace("\r\n","").trim());
-                    break;
-                }
-            }*/
             String data = "";
             while(i<strings.size()){
                 data += strings.get(i++);
             }
             request.setData(data);
-            System.out.println("test request data:"+data);
         }
         return request;
     }
@@ -180,5 +185,21 @@ class serverThread extends Thread{
         if(deBugging){
             System.out.println("Debugging Message: "+string);
         }
+    }
+
+    public boolean checkPath(String path){
+        String fileAdrr = fileDirectory.substring(4);
+        if(path.startsWith(fileAdrr)){
+            String str = path.substring(fileAdrr.length());
+            if(str.length()==0||(!str.startsWith("/"))){
+                return false;
+            }
+            char[] chars = str.substring(1).toCharArray();
+            for(char c:chars){
+                if(c=='/') return false;
+            }
+            return true;
+        }
+        return false;
     }
 }
