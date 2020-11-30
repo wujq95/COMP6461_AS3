@@ -47,10 +47,10 @@ class serverThread extends Thread{
     public Response createResponse(Request request) throws IOException {
         Response response = new Response();
         String path = request.getPath();
+
         if(!checkPath(path)){
-            //讨论404还是400等
             response.setCode(400);
-            response.setPhrase("Bad Request: Wrong Path");
+            response.setPhrase("Bad Request");
             return response;
         }
 
@@ -68,7 +68,7 @@ class serverThread extends Thread{
                     }
                 }
             }else {
-                File file = new File("file" + path);
+                File file = new File(fileDirectory + path);
                 if(file.exists()&&file.isFile()){
                     String headContent = "Content-type: text/plain";
                     if(path.endsWith(".html")){
@@ -97,22 +97,16 @@ class serverThread extends Thread{
                 response.setCode(400);
                 response.setPhrase("Bad Request");
             }else{
-                File file = new File("file" + path);
+                File file = new File(fileDirectory + path);
                 if(!file.exists()){
                      file.createNewFile();
-                }
-                if(!file.isFile()){
-                    //同上
-                    response.setCode(400);
-                    response.setPhrase("Bad Request");
-                    return response;
                 }
                 response.setCode(200);
                 response.setPhrase("OK");
                 String data = request.getData();
                 FileWriter fw;
                 try{
-                    fw = new FileWriter("file" + path);
+                    fw = new FileWriter(fileDirectory + path);
                     fw.write(data);
                     fw.flush();
                     fw.close();
@@ -125,7 +119,6 @@ class serverThread extends Thread{
             response.setCode(400);
             response.setPhrase("Bad Request");
         }
-
         return response;
     }
     public Request parseRequest(String payload){
@@ -188,18 +181,11 @@ class serverThread extends Thread{
     }
 
     public boolean checkPath(String path){
-        String fileAdrr = fileDirectory.substring(4);
-        if(path.startsWith(fileAdrr)){
-            String str = path.substring(fileAdrr.length());
-            if(str.length()==0||(!str.startsWith("/"))){
-                return false;
-            }
-            char[] chars = str.substring(1).toCharArray();
-            for(char c:chars){
-                if(c=='/') return false;
-            }
-            return true;
+        if(path.length()==0||(!path.startsWith("/"))) return false;
+        char[] chars = path.toCharArray();
+        for(int i=1;i<chars.length;i++){
+            if(chars[i]=='/') return false;
         }
-        return false;
+        return true;
     }
 }
