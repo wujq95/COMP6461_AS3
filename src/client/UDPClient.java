@@ -16,12 +16,15 @@ import static java.nio.channels.SelectionKey.OP_READ;
 
 public class UDPClient {
 
+    private long ackNum;
+    private boolean connected;
+
     /**
      * main method
      * @param args
      * @throws IOException
      */
-    public static void main(String [] args) throws IOException {
+    public static void main(String [] args) throws Exception {
         UDPClient client = new UDPClient();
         if(args.length<=1||!args[0].equalsIgnoreCase("httpc")){
             System.out.println("Wrong Syntax.\n");
@@ -75,7 +78,7 @@ public class UDPClient {
     /**
      * set request parameters
      */
-    public void setRequest(Request request, String[] args) throws IOException {
+    public void setRequest(Request request, String[] args) throws Exception {
         if(args.length==2){
             System.out.println("Wrong Syntax\n");
             return;
@@ -187,12 +190,14 @@ public class UDPClient {
      * @param request
      * @throws IOException
      */
-    public void sendRequest(Request request) throws IOException {
+    public void sendRequest(Request request) throws Exception {
         SocketAddress routerAddr = new InetSocketAddress("localhost", 3000);
         InetSocketAddress serverAddr = new InetSocketAddress(request.getHost(), request.getPort());
+        handshake(routerAddr,serverAddr);
         List<String> res;
 
         try(DatagramChannel channel = DatagramChannel.open()){
+
             String msg = "";
             String data = "";
             if(request.isPost()){
@@ -222,7 +227,7 @@ public class UDPClient {
             msg += data;
 
             Packet p = new Packet.Builder()
-                    .setType(0)
+                    .setType(4)
                     .setSequenceNumber(1L)
                     .setPortNumber(serverAddr.getPort())
                     .setPeerAddress(serverAddr.getAddress())
@@ -284,6 +289,79 @@ public class UDPClient {
             outputResult(request,res);
         }
     }
+    
+    public void handshake(SocketAddress routerAddr,InetSocketAddress serverAddr) throws Exception {
+        Long sequenceNum = generateRandomSequenceNum();
+        sendSYN(sequenceNum,routerAddr,serverAddr);
+        sendACK(routerAddr,serverAddr);
+    }
+
+    public Long generateRandomSequenceNum(){
+        return (long) (Math.random() * 100000000);
+    }
+
+    public void sendSYN(Long sequenceNum,SocketAddress routerAddr,InetSocketAddress serverAddr) throws Exception {
+        try(DatagramChannel channel = DatagramChannel.open()){
+            Packet packet = new Packet.Builder()
+                    .setType(1)
+                    .setSequenceNumber(sequenceNum)
+                    .setPortNumber(serverAddr.getPort())
+                    .setPeerAddress(serverAddr.getAddress())
+                    .setPayload("".getBytes())
+                    .create();
+
+            do{
+                channel.send(packet.toBuffer(), routerAddr);
+                System.out.println("step1: send handshake syn to the server");
+            } while(!receiveSYN_ACK(channel,sequenceNum));
+        }
+
+    }
+
+    public boolean receiveSYN_ACK(DatagramChannel channel,Long sequenceNum) throws Exception{
+        channel.configureBlocking(false);
+        Selector selector = Selector.open();
+        channel.register(selector, OP_READ);
+        selector.select(2000);
+
+        Set<SelectionKey> keys = selector.selectedKeys();
+        if(keys.isEmpty()){
+            System.out.println("No syn back after timeout");
+            return false;
+        }
+
+        // We just want a single response.
+        ByteBuffer buf = ByteBuffer.allocate(Packet.MAX_LEN);
+        SocketAddress router = channel.receive(buf);
+        buf.flip();
+        Packet resp = Packet.fromBuffer(buf);
+        String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
+        if(resp.getType()==2&&Integer.parseInt(payload)==sequenceNum+1){
+            System.out.println("step3: receive a handshake syn and ack");
+            ackNum = resp.getSequenceNumber();
+            connected = true;
+            keys.clear();
+            return true;
+        }
+        return false;
+
+    }
+
+    public void sendACK(SocketAddress routerAddr,InetSocketAddress serverAddr) throws IOException{
+        try (DatagramChannel channel = DatagramChannel.open()) {
+            Packet packet = new Packet.Builder()
+                    .setType(3)
+                    .setSequenceNumber(ackNum)
+                    .setPortNumber(serverAddr.getPort())
+                    .setPeerAddress(serverAddr.getAddress())
+                    .setPayload("".getBytes())
+                    .create();
+            channel.send(packet.toBuffer(), routerAddr);
+            System.out.println("send handshake ack");
+
+        }
+    }
+    
 
     /**
      * print the response or output it to the file

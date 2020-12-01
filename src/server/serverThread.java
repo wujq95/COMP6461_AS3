@@ -24,6 +24,25 @@ class serverThread extends Thread{
     }
 
     public void run(){
+        if(packet.getType()==1){
+            long sequenceNum = (long)Math.random()*100000000;
+            String ack = String.valueOf(packet.getSequenceNumber()+1);
+            Packet resp = packet.toBuilder()
+                    .setType(2)
+                    .setSequenceNumber(sequenceNum)
+                    .setPayload(ack.getBytes())
+                    .create();
+            try {
+                channel.send(resp.toBuffer(), router);
+                System.out.println("step2:send ack and syn back to the client");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }else if(packet.getType()==3) {
+            System.out.println("receive ack from the client");
+            return;
+        }
         try{
             synchronized (serverThread.class){
                 String payload = new String(packet.getPayload(), UTF_8).trim();
