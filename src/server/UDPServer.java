@@ -15,9 +15,12 @@ public class UDPServer {
     private static String fileDirectory = "file";
 
     public static void main(String[] args) throws IOException{
+
+        args = new String[]{"httpfs"};
+
         if(checkSyntax(args)){
             try (DatagramChannel channel = DatagramChannel.open()) {
-                channel.bind(new InetSocketAddress(8007));
+                channel.bind(new InetSocketAddress(port));
                 System.out.println("Server starts running");
 
                 ByteBuffer buf = ByteBuffer
@@ -30,8 +33,11 @@ public class UDPServer {
                     buf.flip();
                     Packet packet = Packet.fromBuffer(buf);
                     buf.flip();
-                    new serverThread(packet,deBugging,fileDirectory,router,channel).start();
-
+                    //new serverThread(packet,deBugging,fileDirectory,router,channel).start();
+                    if(packet.getType()==1){
+                        System.out.println("Server has received the handshake step1 packet.");
+                        new Connection(packet,deBugging,"src/"+fileDirectory,router).start();
+                    }
                 }
             }
         }
