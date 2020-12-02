@@ -12,7 +12,7 @@ public class UDPClient {
      */
     public static void main(String [] args) throws Exception {
 
-        args = new String[]{"httpc","get","-v","http://localhost/"};
+        args = new String[]{"httpc","post","-v","-f","/Users/wujiaqi/IdeaProjects/COMP6461_Router/src/test/Info.txt","http://localhost/data.json"};
 
         UDPClient client = new UDPClient();
         if(args.length<=1||!args[0].equalsIgnoreCase("httpc")){

@@ -12,11 +12,11 @@ import java.util.Set;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 
-public class PacketReceive extends Thread{
+public class ReceivePacket extends Thread{
 
     private Connection connection;
 
-    PacketReceive(Connection connection){
+    ReceivePacket(Connection connection){
         this.connection = connection;
     }
 
@@ -29,16 +29,16 @@ public class PacketReceive extends Thread{
                 connection.getChannel().configureBlocking(false);
                 Selector selector = Selector.open();
                 connection.getChannel().register(selector, OP_READ);
-                selector.select(5000);
+                selector.select(2000);
 
                 Set<SelectionKey> keys = selector.selectedKeys();
                 if(keys.isEmpty()){
                     System.out.println("No response after timeout");
                     String msg = connection.handleRequest();
-                    connection.sendRequest(msg);
+                    //connection.sendRequest(msg);
                     continue;
                 }
-                // We just want a single response.
+
                 ByteBuffer buf = ByteBuffer.allocate(Packet.MAX_LEN);
                 SocketAddress router = connection.getChannel().receive(buf);
                 buf.flip();
@@ -47,6 +47,12 @@ public class PacketReceive extends Thread{
                 if(resp.getType()==2&&Integer.parseInt(payload)==connection.getSequenceNum()+1){
                     connection.sendACK();
                 }else if(resp.getType()==4){
+                    System.out.println("A data packet ack has been received. The sequence num is "+resp.getSequenceNumber());
+                    SlidingWindow slidingWindow = connection.getSlidingWindow();
+                    slidingWindow.getWindow().put(resp.getSequenceNumber(),true);
+                    slidingWindow.sendNextPacket(resp.getSequenceNumber());
+                }else if(resp.getType()==5){
+                    System.out.println("Data packet has been received");
                     connection.setFinished(true);
                     res = Arrays.asList(payload.split("\r\n"));
                     keys.clear();

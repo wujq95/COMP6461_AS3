@@ -10,9 +10,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 
@@ -27,10 +25,17 @@ public class Connection {
     private Request request;
     private boolean finished;
     private boolean handshakeFinished;
+    private ArrayList<Packet> packets;
+    //private HashMap<Integer,Boolean> sendWindow;
+    private SlidingWindow slidingWindow;
+    private Integer packetNum;
 
     public Connection(){
         sequenceNum = (long) (Math.random() * 100000000);
         routerAddr = new InetSocketAddress("localhost", 3000);
+        packets = new ArrayList<>();
+        //sendWindow = new HashMap<>();
+        packetNum = 0;
 
         try {
             channel = DatagramChannel.open();
@@ -50,8 +55,9 @@ public class Connection {
         serverAddr = new InetSocketAddress(request.getHost(), request.getPort());
         handshake();
         String msg = handleRequest();
-        new PacketReceive(this).start();
-        sendRequest(msg);
+        new ReceivePacket(this).start();
+        makePackets(msg);
+        slidingWindow = new SlidingWindow(this,packets);
     }
 
     /**
@@ -59,6 +65,7 @@ public class Connection {
      * @throws Exception
      */
     private void handshake() throws Exception {
+        System.out.println("Handshake start");
         sendSYN();
         sendACK();
     }
@@ -79,7 +86,7 @@ public class Connection {
         do{
             channel.send(packet.toBuffer(), routerAddr);
             Thread.sleep(500);
-            System.out.println("Client has sent handshake step1 syn to the server");
+            System.out.println("Client has sent handshake syn to the server");
         } while(!receiveSYN_ACK());
     }
 
@@ -96,7 +103,7 @@ public class Connection {
 
         Set<SelectionKey> keys = selector.selectedKeys();
         if(keys.isEmpty()){
-            System.out.println("No syn back after timeout");
+            System.out.println("No handshake syn back after timeout");
             return false;
         }
 
@@ -107,7 +114,7 @@ public class Connection {
         Packet resp = Packet.fromBuffer(buf);
         String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
         if(resp.getType()==2&&Integer.parseInt(payload)==sequenceNum+1){
-            System.out.println("Client has received a handshake step2 syn and ack from the sever");
+            System.out.println("Client has received a handshake syn and ack from the sever");
             serverAddr = new InetSocketAddress(resp.getPeerAddress(), resp.getPeerPort());
             ackNum = resp.getSequenceNumber()+1;
             connected = true;
@@ -130,7 +137,7 @@ public class Connection {
                 .setPayload("".getBytes())
                 .create();
         channel.send(packet.toBuffer(), routerAddr);
-        System.out.println("Client has sent handshake step3 ack back to the server. ");
+        System.out.println("Client has sent handshake ack back to the server. ");
     }
 
     public String handleRequest(){
@@ -180,38 +187,52 @@ public class Connection {
         }
     }
 
-    private void receiveRequest(){
-        try{
-            List<String> res;
-            // Try to receive a packet within timeout.
-            channel.configureBlocking(false);
-            Selector selector = Selector.open();
-            channel.register(selector, OP_READ);
-            selector.select(5000);
-
-            Set<SelectionKey> keys = selector.selectedKeys();
-            if(keys.isEmpty()){
-                System.out.println("No response after timeout");
-                return;
-            }
-            // We just want a single response.
-            ByteBuffer buf = ByteBuffer.allocate(Packet.MAX_LEN);
-            SocketAddress router = channel.receive(buf);
-            buf.flip();
-            Packet resp = Packet.fromBuffer(buf);
-            String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
-            if(resp.getType()==2&&Integer.parseInt(payload)==sequenceNum+1){
-                sendACK();
-            }else if(resp.getType()==4){
-                finished = true;
-                res = Arrays.asList(payload.split("\r\n"));
-                keys.clear();
-                parseResponse(res);
-            }
-        }catch (IOException e){
-            e.printStackTrace();
+    private void makePackets(String msg){
+        if(msg.length()<=1000){
+            Packet p = new Packet.Builder()
+                    .setType(0)
+                    .setSequenceNumber(packetNum)
+                    .setPortNumber(serverAddr.getPort())
+                    .setPeerAddress(serverAddr.getAddress())
+                    .setPayload(msg.getBytes())
+                    .create();
+            //sendWindow.put(packetNum,false);
+            packets.add(p);
+            return;
         }
-
+        String firstData = msg.substring(0,1000);
+        msg = msg.substring(1000);
+        Packet firstP = new Packet.Builder()
+                .setType(4)
+                .setSequenceNumber(packetNum++)
+                .setPortNumber(serverAddr.getPort())
+                .setPeerAddress(serverAddr.getAddress())
+                .setPayload(firstData.getBytes())
+                .create();
+        //sendWindow.put(packetNum,false);
+        packets.add(firstP);
+        while(msg.length()>1000){
+            String majorData = msg.substring(0,1000);
+            msg = msg.substring(1000);
+            Packet majorP = new Packet.Builder()
+                    .setType(5)
+                    .setSequenceNumber(packetNum++)
+                    .setPortNumber(serverAddr.getPort())
+                    .setPeerAddress(serverAddr.getAddress())
+                    .setPayload(majorData.getBytes())
+                    .create();
+            //sendWindow.put(packetNum,false);
+            packets.add(majorP);
+        }
+        Packet lastP = new Packet.Builder()
+                .setType(6)
+                .setSequenceNumber(packetNum++)
+                .setPortNumber(serverAddr.getPort())
+                .setPeerAddress(serverAddr.getAddress())
+                .setPayload(msg.getBytes())
+                .create();
+        //sendWindow.put(packetNum,false);
+        packets.add(lastP);
     }
 
     public void parseResponse(List<String> res) throws IOException{
@@ -242,17 +263,16 @@ public class Connection {
                     request.setHost(host.trim());
                     request.setRedirect(request.getRedirect()+1);
                     String msg = handleRequest();
-                    sendRequest(msg);
+                    //sendRequest(msg);
+                    new ReceivePacket(this).start();
+                    makePackets(msg);
+                    slidingWindow = new SlidingWindow(this,packets);
                 }
             }
         }else{
             outputResult(res);
         }
     }
-
-
-
-
 
     /**
      * print the response or output it to the file
@@ -331,5 +351,29 @@ public class Connection {
 
     public void setFinished(boolean finished) {
         this.finished = finished;
+    }
+
+    /*public HashMap<Integer, Boolean> getSendWindow() {
+        return sendWindow;
+    }
+
+    public void setSendWindow(HashMap<Integer, Boolean> sendWindow) {
+        this.sendWindow = sendWindow;
+    }*/
+
+    public SocketAddress getRouterAddr() {
+        return routerAddr;
+    }
+
+    public void setRouterAddr(SocketAddress routerAddr) {
+        this.routerAddr = routerAddr;
+    }
+
+    public SlidingWindow getSlidingWindow() {
+        return slidingWindow;
+    }
+
+    public void setSlidingWindow(SlidingWindow slidingWindow) {
+        this.slidingWindow = slidingWindow;
     }
 }

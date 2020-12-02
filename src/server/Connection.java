@@ -16,8 +16,9 @@ public class Connection extends Thread{
     private Integer newPort;
     private long sequenceNum;
     private long ackNum;
-    private Map<Long,String> receiveWindow;
-    private Map<Long,String> sendWindow;
+    //private Map<Long,String> receiveWindow;
+    //private Map<Long,String> sendWindow;
+    TreeMap<Long, Packet> receivePackets;
     private DatagramChannel channel;
     private boolean connected;
     private boolean receiveAll;
@@ -34,8 +35,9 @@ public class Connection extends Thread{
         newPort = (int)(Math.random()*1000 + 9000);
         ackNum = packet.getSequenceNumber();
         sequenceNum = (long)(Math.random()*100000000);
-        receiveWindow = new TreeMap<>();
-        sendWindow = new HashMap<>();
+        receivePackets = new TreeMap<>();
+        //receiveWindow = new TreeMap<>();
+        //sendWindow = new HashMap<>();
         startNum = -1;
         endNum = -1;
         try{
@@ -48,7 +50,7 @@ public class Connection extends Thread{
 
     @Override
     public void run() {
-        new PacketReceive(this,deBugging,fileDirectory,router,sequenceNum).start();
+        new ReceivePacket(this,deBugging,fileDirectory,router,sequenceNum).start();
         sendSynAndAck();
     }
 
@@ -63,12 +65,18 @@ public class Connection extends Thread{
         do{
             try {
                 channel.send(synAck.toBuffer(),router);
-                System.out.println("Server has sent handshake step2 packet back to the client. ");
+                System.out.println("Server has sent handshake ack and syn back to the client. ");
                 Thread.sleep(500);
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }while (!connected);
+    }
+
+    public boolean receiveAllPackets(){
+        if(endNum==-1||startNum==-1) return  false;
+        if(endNum-startNum+1==receivePackets.size()) return true;
+        return false;
     }
 
 
@@ -94,6 +102,50 @@ public class Connection extends Thread{
 
     public void setConnected(boolean connected) {
         this.connected = connected;
+    }
+
+    public SocketAddress getRouter() {
+        return router;
+    }
+
+    public void setRouter(SocketAddress router) {
+        this.router = router;
+    }
+
+    public List<Packet> getPackets() {
+        return packets;
+    }
+
+    public void setPackets(List<Packet> packets) {
+        this.packets = packets;
+    }
+
+    public TreeMap<Long, Packet> getReceivePackets() {
+        return receivePackets;
+    }
+
+    public void setReceivePackets(TreeMap<Long, Packet> receivePackets) {
+        this.receivePackets = receivePackets;
+    }
+
+    public void addReceivePackets(Packet packet) {
+        receivePackets.put(packet.getSequenceNumber(),packet);
+    }
+
+    public long getStartNum() {
+        return startNum;
+    }
+
+    public void setStartNum(long startNum) {
+        this.startNum = startNum;
+    }
+
+    public long getEndNum() {
+        return endNum;
+    }
+
+    public void setEndNum(long endNum) {
+        this.endNum = endNum;
     }
 }
 

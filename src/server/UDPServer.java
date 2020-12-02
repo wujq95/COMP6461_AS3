@@ -35,7 +35,7 @@ public class UDPServer {
                     buf.flip();
                     //new serverThread(packet,deBugging,fileDirectory,router,channel).start();
                     if(packet.getType()==1){
-                        System.out.println("Server has received the handshake step1 packet.");
+                        System.out.println("Server has received the handshake syn.");
                         new Connection(packet,deBugging,"src/"+fileDirectory,router).start();
                     }
                 }

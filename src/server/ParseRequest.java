@@ -136,7 +136,7 @@ public class ParseRequest {
             payload += response.getData() + "\r\n";
         }
         Packet resp = packet.toBuilder()
-                .setType(4)
+                .setType(5)
                 .setPayload(payload.getBytes())
                 .create();
         connection.getChannel().send(resp.toBuffer(), router);
