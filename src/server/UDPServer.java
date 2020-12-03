@@ -14,6 +14,7 @@ public class UDPServer {
     private static boolean deBugging;
     private static String fileDirectory = "file";
 
+
     public static void main(String[] args) throws IOException{
 
         args = new String[]{"httpfs"};
@@ -33,7 +34,6 @@ public class UDPServer {
                     buf.flip();
                     Packet packet = Packet.fromBuffer(buf);
                     buf.flip();
-                    //new serverThread(packet,deBugging,fileDirectory,router,channel).start();
                     if(packet.getType()==1){
                         System.out.println("Server has received the handshake syn.");
                         new Connection(packet,deBugging,"src/"+fileDirectory,router).start();
@@ -43,6 +43,12 @@ public class UDPServer {
         }
     }
 
+
+    /**
+     * check args syntax
+     * @param args
+     * @return
+     */
     public static boolean checkSyntax(String[] args){
         if(args.length==0||!args[0].equals("httpfs")){
             System.out.println("Wrong Syntax.\n");
@@ -106,6 +112,11 @@ public class UDPServer {
         }
     }
 
+    /**
+     * check num format
+     * @param str
+     * @return
+     */
     public static boolean checkNum(String str){
         if(str==null||str.length()==0) return false;
         if(str.equals("0")) return true;
@@ -121,4 +132,6 @@ public class UDPServer {
         }
         return  true;
     }
+
+
 }

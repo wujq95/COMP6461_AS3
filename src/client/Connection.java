@@ -18,27 +18,29 @@ public class Connection {
 
     private DatagramChannel channel;
     private long ackNum;
-    private boolean connected;
     private long sequenceNum;
+    private long packetNum;
+    private long startNum;
+    private long endNum;
     private SocketAddress routerAddr;
     private InetSocketAddress serverAddr;
     private Request request;
     private boolean finished;
-    private ArrayList<Packet> packets;
-    //private HashMap<Integer,Boolean> sendWindow;
-    private SlidingWindow slidingWindow;
-    private Integer packetNum;
-    TreeMap<Long, Packet> receivePackets;
-    private long startNum;
-    private long endNum;
     private boolean lastPacket;
+    private ArrayList<Packet> packets;
+    private SlidingWindow slidingWindow;
+    private TreeMap<Long, Packet> receivePackets;
+    private boolean hasHandledPackets;
 
+
+    /**
+     * constructor method
+     */
     public Connection(){
         sequenceNum = (long) (Math.random() * 100000000);
         routerAddr = new InetSocketAddress("localhost", 3000);
         packets = new ArrayList<>();
         receivePackets = new TreeMap<>();
-        //sendWindow = new HashMap<>();
         packetNum = 0;
         startNum = -1;
         endNum = -1;
@@ -52,17 +54,24 @@ public class Connection {
     }
 
     /**
-     * send request and receive response
+     * handle method
      * @param request
      * @throws IOException
      */
     public void requestHandle(Request request) throws Exception {
         this.request = request;
         serverAddr = new InetSocketAddress(request.getHost(), request.getPort());
+
+        //hand shake process
         handshake();
-        String msg = handleRequest();
+
+        //start the packet receive thread
         new ReceivePacket(this).start();
-        makePackets(msg);
+
+        //divide the packets
+        makePackets(handleRequest());
+
+        //start the sliding window
         slidingWindow = new SlidingWindow(this,packets);
     }
 
@@ -72,7 +81,11 @@ public class Connection {
      */
     private void handshake() throws Exception {
         System.out.println("Handshake start");
+
+        //send syn to the server
         sendSYN();
+
+        //send ack to the server
         sendACK();
     }
 
@@ -123,7 +136,6 @@ public class Connection {
             System.out.println("Client has received a handshake syn and ack from the sever");
             serverAddr = new InetSocketAddress(resp.getPeerAddress(), resp.getPeerPort());
             ackNum = resp.getSequenceNumber()+1;
-            connected = true;
             keys.clear();
             return true;
         }
@@ -146,6 +158,10 @@ public class Connection {
         System.out.println("Client has sent handshake ack back to the server. ");
     }
 
+    /**
+     * handle request to have a String Message
+     * @return
+     */
     public String handleRequest(){
         String msg = "";
         String data = "";
@@ -177,6 +193,10 @@ public class Connection {
         return msg;
     }
 
+    /**
+     * divide the message into packets
+     * @param msg
+     */
     private void makePackets(String msg){
         if(msg.length()<=1000){
             Packet p = new Packet.Builder()
@@ -186,7 +206,6 @@ public class Connection {
                     .setPeerAddress(serverAddr.getAddress())
                     .setPayload(msg.getBytes())
                     .create();
-            //sendWindow.put(packetNum,false);
             packets.add(p);
             return;
         }
@@ -199,7 +218,6 @@ public class Connection {
                 .setPeerAddress(serverAddr.getAddress())
                 .setPayload(firstData.getBytes())
                 .create();
-        //sendWindow.put(packetNum,false);
         packets.add(firstP);
         while(msg.length()>1000){
             String majorData = msg.substring(0,1000);
@@ -211,7 +229,6 @@ public class Connection {
                     .setPeerAddress(serverAddr.getAddress())
                     .setPayload(majorData.getBytes())
                     .create();
-            //sendWindow.put(packetNum,false);
             packets.add(majorP);
         }
         Packet lastP = new Packet.Builder()
@@ -221,17 +238,25 @@ public class Connection {
                 .setPeerAddress(serverAddr.getAddress())
                 .setPayload(msg.getBytes())
                 .create();
-        //sendWindow.put(packetNum,false);
         packets.add(lastP);
     }
 
+
+    /**
+     * parse the response
+     * @param res
+     * @throws IOException
+     */
     public void parseResponse(List<String> res) throws IOException{
         if(res.size()==0){
             System.out.println("No response");
             return;
         }
         if(res.get(0).split(" ")[1].startsWith("3")){
-            if(request.getRedirect()>5) return;
+            if(request.getRedirect()>5) {
+                System.out.println("Redirect too many times error");
+                return;
+            }
             for(String str: res){
                 if(str.startsWith("Location: ")){
                     String redirectAddress = str.split(" ")[1];
@@ -252,10 +277,12 @@ public class Connection {
                     request.setPath(path.trim());
                     request.setHost(host.trim());
                     request.setRedirect(request.getRedirect()+1);
-                    String msg = handleRequest();
-                    //sendRequest(msg);
-                    new ReceivePacket(this).start();
-                    makePackets(msg);
+                    serverAddr = new InetSocketAddress(request.getHost(), request.getPort());
+                    try {
+                        handshake();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     slidingWindow = new SlidingWindow(this,packets);
                 }
             }
@@ -311,12 +338,20 @@ public class Connection {
         lastPacket = true;
     }
 
+    /**
+     * check is all packets have been received
+     * @return
+     */
     public boolean receiveAllPackets(){
         if(endNum==-1||startNum==-1) return  false;
         if(endNum-startNum+1==receivePackets.size()) return true;
         return false;
     }
 
+    /**
+     * add received packets to the map
+     * @param packet
+     */
     public void addReceivePackets(Packet packet) {
         receivePackets.put(packet.getSequenceNumber(),packet);
     }
@@ -353,14 +388,6 @@ public class Connection {
     public void setFinished(boolean finished) {
         this.finished = finished;
     }
-
-    /*public HashMap<Integer, Boolean> getSendWindow() {
-        return sendWindow;
-    }
-
-    public void setSendWindow(HashMap<Integer, Boolean> sendWindow) {
-        this.sendWindow = sendWindow;
-    }*/
 
     public SocketAddress getRouterAddr() {
         return routerAddr;
@@ -408,5 +435,13 @@ public class Connection {
 
     public void setLastPacket(boolean lastPacket) {
         this.lastPacket = lastPacket;
+    }
+
+    public boolean isHasHandledPackets() {
+        return hasHandledPackets;
+    }
+
+    public void setHasHandledPackets(boolean hasHandledPackets) {
+        this.hasHandledPackets = hasHandledPackets;
     }
 }

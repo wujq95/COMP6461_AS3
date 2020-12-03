@@ -1,7 +1,6 @@
 package server;
 
 import java.io.*;
-import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.List;
 
@@ -10,17 +9,49 @@ public class ParseRequest {
 
     private boolean deBugging;
     private String fileDirectory;
-    private Connection connection;
-    private SocketAddress router;
 
-    public ParseRequest(boolean deBugging, String fileDirectory,Connection connection,SocketAddress router){
+    public ParseRequest(boolean deBugging, String fileDirectory){
         this.deBugging = deBugging;
         this.fileDirectory = fileDirectory;
-        this.router = router;
-        this.connection = connection;
     }
 
-    public Response createResponse(Request request) throws IOException {
+    /**
+     * parse request
+     * @param payload
+     * @return
+     */
+    public Request parseRequest(String payload){
+        Request request = new Request();
+        List<String> strings = Arrays.asList(payload.split("\r\n"));
+        String str1 = strings.get(0);
+        String[] str = str1.split(" ");
+        request.setMethod(str[0]);
+        request.setPath(str[1]);
+        request.setVersion(str[2]);
+
+        int i = 1;
+        while(i<strings.size()&&!strings.get(i).equals("")){
+            request.addHeaders(strings.get(i));
+            i++;
+        }
+
+        if(request.getMethod().toLowerCase().equals("post")){
+            String data = "";
+            while(i<strings.size()){
+                data += strings.get(i++);
+            }
+            request.setData(data);
+        }
+        return request;
+    }
+
+    /**
+     * create response
+     * @param request
+     * @return
+     * @throws IOException
+     */
+    public synchronized Response createResponse(Request request) throws IOException {
         Response response = new Response();
         String path = request.getPath();
 
@@ -97,32 +128,14 @@ public class ParseRequest {
         }
         return response;
     }
-    public Request parseRequest(String payload){
-        Request request = new Request();
-        List<String> strings = Arrays.asList(payload.split("\r\n"));
-        String str1 = strings.get(0);
-        String[] str = str1.split(" ");
-        request.setMethod(str[0]);
-        request.setPath(str[1]);
-        request.setVersion(str[2]);
 
-        int i = 1;
-        while(i<strings.size()&&!strings.get(i).equals("")){
-            request.addHeaders(strings.get(i));
-            i++;
-        }
 
-        if(request.getMethod().toLowerCase().equals("post")){
-            String data = "";
-            while(i<strings.size()){
-                data += strings.get(i++);
-            }
-            request.setData(data);
-        }
-        return request;
-    }
-
-    public String handleResponse(Response response) throws IOException {
+    /**
+     * handle the response to String payload
+     * @param response
+     * @return
+     */
+    public String handleResponse(Response response){
         String payload = "";
         payload += "HTTP/1.0 " + response.getCode() +" " + response.getPhrase() + "\r\n";
 
@@ -135,14 +148,14 @@ public class ParseRequest {
         }
 
         return payload;
-        /*Packet resp = packet.toBuilder()
-                .setType(5)
-                .setPayload(payload.getBytes())
-                .create();
-        connection.getChannel().send(resp.toBuffer(), router);
-        System.out.println("Server has sent the reply of the data packet back to the client.");*/
     }
 
+    /**
+     * read file
+     * @param response
+     * @param f
+     * @throws IOException
+     */
     public void readFile(Response response, File f) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(f)));
         String str = br.readLine();
@@ -154,6 +167,11 @@ public class ParseRequest {
     }
 
 
+    /**
+     * check path format
+     * @param path
+     * @return
+     */
     public boolean checkPath(String path){
         if(path.length()==0||(!path.startsWith("/"))) return false;
         char[] chars = path.toCharArray();

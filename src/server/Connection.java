@@ -12,13 +12,11 @@ public class Connection extends Thread{
     private boolean deBugging;
     private String fileDirectory;
     private ArrayList<Packet> packets;
-    private  SocketAddress router;
+    private SocketAddress routerAddr;
     private Integer newPort;
     private long sequenceNum;
     private long ackNum;
-    //private Map<Long,String> receiveWindow;
-    //private Map<Long,String> sendWindow;
-    TreeMap<Long, Packet> receivePackets;
+    private TreeMap<Long, Packet> receivePackets;
     private DatagramChannel channel;
     private boolean connected;
     private boolean receiveAll;
@@ -28,8 +26,8 @@ public class Connection extends Thread{
     private long packetNum;
 
 
-    public Connection(Packet packet,boolean deBugging,String fileDirectory, SocketAddress router){
-        this.router = router;
+    public Connection(Packet packet,boolean deBugging,String fileDirectory, SocketAddress routerAddr){
+        this.routerAddr = routerAddr;
         this.packet = packet;
         this.deBugging = deBugging;
         this.fileDirectory = fileDirectory;
@@ -38,8 +36,6 @@ public class Connection extends Thread{
         ackNum = packet.getSequenceNumber();
         sequenceNum = (long)(Math.random()*100000000);
         receivePackets = new TreeMap<>();
-        //receiveWindow = new TreeMap<>();
-        //sendWindow = new HashMap<>();
         startNum = -1;
         endNum = -1;
         try{
@@ -52,10 +48,13 @@ public class Connection extends Thread{
 
     @Override
     public void run() {
-        new ReceivePacket(this,deBugging,fileDirectory,router,sequenceNum).start();
+        new ReceivePacket(this,deBugging,fileDirectory,routerAddr,sequenceNum).start();
         sendSynAndAck();
     }
 
+    /**
+     * send handshake syn and ack back to the client
+     */
     private void sendSynAndAck(){
         Packet synAck = new Packet.Builder()
                 .setType(2)
@@ -66,7 +65,7 @@ public class Connection extends Thread{
                 .create();
         do{
             try {
-                channel.send(synAck.toBuffer(),router);
+                channel.send(synAck.toBuffer(),routerAddr);
                 System.out.println("Server has sent handshake ack and syn back to the client. ");
                 Thread.sleep(500);
             } catch (IOException | InterruptedException e) {
@@ -75,13 +74,23 @@ public class Connection extends Thread{
         }while (!connected);
     }
 
+    /**
+     * check id all packets have been receives
+     * @return
+     */
     public boolean receiveAllPackets(){
         if(endNum==-1||startNum==-1) return  false;
         if(endNum-startNum+1==receivePackets.size()) return true;
         return false;
     }
 
-    public void makePackets(String msg,long packetNum,InetSocketAddress serverAddr){
+    /**
+     * divided message to the packets
+     * @param msg
+     * @param packetNum
+     * @param serverAddr
+     */
+     void makePackets(String msg,long packetNum,InetSocketAddress serverAddr){
         this.packetNum = packetNum;
         if(msg.length()<=1000){
             Packet p = new Packet.Builder()
@@ -91,7 +100,6 @@ public class Connection extends Thread{
                     .setPeerAddress(serverAddr.getAddress())
                     .setPayload(msg.getBytes())
                     .create();
-            //sendWindow.put(packetNum,false);
             packets.add(p);
             return;
         }
@@ -104,7 +112,6 @@ public class Connection extends Thread{
                 .setPeerAddress(serverAddr.getAddress())
                 .setPayload(firstData.getBytes())
                 .create();
-        //sendWindow.put(packetNum,false);
         packets.add(firstP);
         while(msg.length()>1000){
             String majorData = msg.substring(0,1000);
@@ -116,7 +123,6 @@ public class Connection extends Thread{
                     .setPeerAddress(serverAddr.getAddress())
                     .setPayload(majorData.getBytes())
                     .create();
-            //sendWindow.put(packetNum,false);
             packets.add(majorP);
         }
         Packet lastP = new Packet.Builder()
@@ -126,7 +132,6 @@ public class Connection extends Thread{
                 .setPeerAddress(serverAddr.getAddress())
                 .setPayload(msg.getBytes())
                 .create();
-        //sendWindow.put(packetNum,false);
         packets.add(lastP);
     }
 
@@ -156,11 +161,11 @@ public class Connection extends Thread{
     }
 
     public SocketAddress getRouter() {
-        return router;
+        return routerAddr;
     }
 
-    public void setRouter(SocketAddress router) {
-        this.router = router;
+    public void setRouter(SocketAddress routerAddr) {
+        this.routerAddr = routerAddr;
     }
 
     public ArrayList<Packet> getPackets() {

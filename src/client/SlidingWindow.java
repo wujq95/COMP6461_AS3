@@ -6,13 +6,16 @@ import java.util.HashMap;
 public class SlidingWindow {
 
     private long start;
-    //private Integer end;
     private final Integer windowLength;
     private Connection connection;
     private ArrayList<Packet> packets;
-    private boolean allFinished;
     private static HashMap<Long,Boolean> window;
 
+    /**
+     * constructor method
+     * @param connection
+     * @param packets
+     */
     public SlidingWindow(Connection connection, ArrayList<Packet> packets){
         start = 0;
         windowLength = 4;
@@ -28,7 +31,6 @@ public class SlidingWindow {
             for(int i=0;i<packets.size();i++){
                 new SendPacket(connection,this,packets.get(i)).start();
             }
-            allFinished = true;
         }else {
             for (int i = 0; i < windowLength; i ++){
                 new SendPacket(connection,this,packets.get(i)).start();
@@ -36,6 +38,10 @@ public class SlidingWindow {
         }
     }
 
+    /**
+     * send next packet of the window
+     * @param sequenceNum
+     */
     public void sendNextPacket(long sequenceNum){
         long end = start+windowLength-1;
         if(packets.get((int)start).getSequenceNumber()==sequenceNum){
@@ -43,7 +49,6 @@ public class SlidingWindow {
                 start++;
                 end++;
                 new SendPacket(connection,this, packets.get((int)end)).start();
-                if(end == packets.size()-1) allFinished = true;
             }
         }
     }

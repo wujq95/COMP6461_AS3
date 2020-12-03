@@ -9,6 +9,12 @@ public class SendPacket extends Thread{
     private Connection connection;
     private boolean notFirstTime;
 
+    /**
+     * constructor method
+     * @param connection
+     * @param slidingWindow
+     * @param packet
+     */
     public SendPacket(Connection connection, SlidingWindow slidingWindow, Packet packet){
         this.connection = connection;
         this.slidingWindow = slidingWindow;
@@ -21,8 +27,8 @@ public class SendPacket extends Thread{
             try {
                 if(notFirstTime){
                     System.out.println("The packet with sequence number "+ packet.getSequenceNumber()+" is time out");
-                    notFirstTime = true;
                 }
+                notFirstTime = true;
                 connection.getChannel().send(packet.toBuffer(), connection.getRouter());
                 System.out.println("A data packet has been sent to the client. The sequence number is "+packet.getSequenceNumber());
                 Thread.sleep(1000);

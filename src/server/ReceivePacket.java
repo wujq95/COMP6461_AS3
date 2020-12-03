@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
@@ -19,12 +18,12 @@ public class ReceivePacket extends Thread{
     private Connection connection;
     private boolean deBugging;
     private String fileDirectory;
-    private SocketAddress router;
+    private SocketAddress routerAddr;
     private long sequenceNum;
     private SlidingWindow slidingWindow;
 
-    public ReceivePacket(Connection connection, boolean deBugging, String fileDirectory, SocketAddress router, long sequenceNum){
-        this.router = router;
+    public ReceivePacket(Connection connection, boolean deBugging, String fileDirectory, SocketAddress routerAddr, long sequenceNum){
+        this.routerAddr = routerAddr;
         this.connection = connection;
         this.deBugging = deBugging;
         this.fileDirectory = fileDirectory;
@@ -43,11 +42,8 @@ public class ReceivePacket extends Thread{
                 Set<SelectionKey> keys = selector.selectedKeys();
                 if(keys.isEmpty()){
                     System.out.println("No response after timeout");
-                    //String msg = connection.handleRequest();
-                    //connection.sendRequest(msg);
                     continue;
                 }
-
                 ByteBuffer buf = ByteBuffer.allocate(Packet.MAX_LEN);
                 SocketAddress router = connection.getChannel().receive(buf);
                 buf.flip();
@@ -80,22 +76,16 @@ public class ReceivePacket extends Thread{
                         .setPeerAddress(packet.getPeerAddress())
                         .setPayload("".getBytes())
                         .create();
-
                 System.out.println("Server has sent the data ack back to the client");
                 try {
                     connection.getChannel().send(resPacket.toBuffer(),connection.getRouter());
-                    ParseRequest parseRequest = new ParseRequest(deBugging,fileDirectory,connection,router);
-
-                    //这里再测试一下
-                    synchronized (ParseRequest.class){
-                        String payload = new String(packet.getPayload(), UTF_8).trim();
-                        Request request = parseRequest.parseRequest(payload);
-                        Response response = parseRequest.createResponse(request);
-                        String handledResponse = parseRequest.handleResponse(response);
-                        connection.makePackets(handledResponse,packet.getSequenceNumber()+1,new InetSocketAddress(packet.getPeerAddress(),packet.getPeerPort()));
-                        slidingWindow = new SlidingWindow(connection);
-                    }
-                    //试试这样在方法前面加上synchronized行不行
+                    ParseRequest parseRequest = new ParseRequest(deBugging,fileDirectory);
+                    String payload = new String(packet.getPayload(), UTF_8).trim();
+                    Request request = parseRequest.parseRequest(payload);
+                    Response response = parseRequest.createResponse(request);
+                    String handledResponse = parseRequest.handleResponse(response);
+                    connection.makePackets(handledResponse,packet.getSequenceNumber()+1,new InetSocketAddress(packet.getPeerAddress(),packet.getPeerPort()));
+                    slidingWindow = new SlidingWindow(connection);
                 }catch(Exception e){
                     e.printStackTrace();
                 }
@@ -116,7 +106,6 @@ public class ReceivePacket extends Thread{
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
                 if(packet.getType()==4){
                     connection.setStartNum(packet.getSequenceNumber());
                 } else if(packet.getType()==6){
@@ -126,25 +115,24 @@ public class ReceivePacket extends Thread{
                     return;
                 }
                 if(connection.receiveAllPackets()){
-                    // 加上多线程
-                    ParseRequest parseRequest = new ParseRequest(deBugging,fileDirectory,connection,router);
-                    String payload = "";
-                    Iterator<Map.Entry<Long, Packet>> it = connection.getReceivePackets().entrySet().iterator();
-                    while(it.hasNext()) {
-                        Map.Entry<Long, Packet> entry = it.next();
-                        payload += new String(entry.getValue().getPayload(), UTF_8).trim();
-                    }
                     try {
-                        synchronized (ParseRequest.class){
-                            Request request = parseRequest.parseRequest(payload);
-                            Response response = parseRequest.createResponse(request);
-                            String handledResponse = parseRequest.handleResponse(response);
-                            connection.makePackets(handledResponse,connection.getEndNum()+1,new InetSocketAddress(packet.getPeerAddress(),packet.getPeerPort()));
-                            slidingWindow = new SlidingWindow(connection);
+                    // 加上多线程
+                        ParseRequest parseRequest = new ParseRequest(deBugging,fileDirectory);
+                        String payload = "";
+                        Iterator<Map.Entry<Long, Packet>> it = connection.getReceivePackets().entrySet().iterator();
+                        while(it.hasNext()) {
+                            Map.Entry<Long, Packet> entry = it.next();
+                            payload += new String(entry.getValue().getPayload(), UTF_8).trim();
                         }
-                    }catch(Exception e){
+                        Request request = parseRequest.parseRequest(payload);
+                        Response response = parseRequest.createResponse(request);
+                        String handledResponse = parseRequest.handleResponse(response);
+                        connection.makePackets(handledResponse,connection.getEndNum()+1,new InetSocketAddress(packet.getPeerAddress(),packet.getPeerPort()));
+                        slidingWindow = new SlidingWindow(connection);
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
+
                 }
             }else if(packet.getType()==7){
                 System.out.println("A data packet ack has been received. The sequence num is "+packet.getSequenceNumber());
@@ -153,6 +141,7 @@ public class ReceivePacket extends Thread{
                 for(boolean value: slidingWindow.getWindow().values()){
                     if(!value) return;
                 }
+                System.out.println("Server has been closed");
                 connection.setFinished(true);
             }
         }
