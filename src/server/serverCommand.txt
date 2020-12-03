@@ -4,7 +4,7 @@ Server编译和启动
 3. cd /Users/wujiaqi/IdeaProjects/COMP6461_Router/src
 4. java server/UDPServer httpfs
 5. java server/UDPServer httpfs -v
-
+6. java server/UDPServer httpfs -v -d 'file/inner'
 
 
 1. java httpServer httpfs
