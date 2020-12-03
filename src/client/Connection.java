@@ -24,18 +24,24 @@ public class Connection {
     private InetSocketAddress serverAddr;
     private Request request;
     private boolean finished;
-    private boolean handshakeFinished;
     private ArrayList<Packet> packets;
     //private HashMap<Integer,Boolean> sendWindow;
     private SlidingWindow slidingWindow;
     private Integer packetNum;
+    TreeMap<Long, Packet> receivePackets;
+    private long startNum;
+    private long endNum;
+    private boolean lastPacket;
 
     public Connection(){
         sequenceNum = (long) (Math.random() * 100000000);
         routerAddr = new InetSocketAddress("localhost", 3000);
         packets = new ArrayList<>();
+        receivePackets = new TreeMap<>();
         //sendWindow = new HashMap<>();
         packetNum = 0;
+        startNum = -1;
+        endNum = -1;
 
         try {
             channel = DatagramChannel.open();
@@ -171,22 +177,6 @@ public class Connection {
         return msg;
     }
 
-
-    public void sendRequest(String msg){
-        Packet p = new Packet.Builder()
-                .setType(4)
-                .setSequenceNumber(1L)
-                .setPortNumber(serverAddr.getPort())
-                .setPeerAddress(serverAddr.getAddress())
-                .setPayload(msg.getBytes())
-                .create();
-        try {
-            channel.send(p.toBuffer(), routerAddr);
-        }catch (IOException e){
-            e.printStackTrace();
-        }
-    }
-
     private void makePackets(String msg){
         if(msg.length()<=1000){
             Packet p = new Packet.Builder()
@@ -318,6 +308,17 @@ public class Connection {
                 }
             }
         }
+        lastPacket = true;
+    }
+
+    public boolean receiveAllPackets(){
+        if(endNum==-1||startNum==-1) return  false;
+        if(endNum-startNum+1==receivePackets.size()) return true;
+        return false;
+    }
+
+    public void addReceivePackets(Packet packet) {
+        receivePackets.put(packet.getSequenceNumber(),packet);
     }
 
     /**
@@ -375,5 +376,37 @@ public class Connection {
 
     public void setSlidingWindow(SlidingWindow slidingWindow) {
         this.slidingWindow = slidingWindow;
+    }
+
+    public long getStartNum() {
+        return startNum;
+    }
+
+    public void setStartNum(long startNum) {
+        this.startNum = startNum;
+    }
+
+    public long getEndNum() {
+        return endNum;
+    }
+
+    public void setEndNum(long endNum) {
+        this.endNum = endNum;
+    }
+
+    public TreeMap<Long, Packet> getReceivePackets() {
+        return receivePackets;
+    }
+
+    public void setReceivePackets(TreeMap<Long, Packet> receivePackets) {
+        this.receivePackets = receivePackets;
+    }
+
+    public boolean isLastPacket() {
+        return lastPacket;
+    }
+
+    public void setLastPacket(boolean lastPacket) {
+        this.lastPacket = lastPacket;
     }
 }

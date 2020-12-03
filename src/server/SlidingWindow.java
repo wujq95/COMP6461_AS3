@@ -1,27 +1,27 @@
-package client;
+package server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 public class SlidingWindow {
 
-    private long start;
-    //private Integer end;
-    private final Integer windowLength;
     private Connection connection;
+    private long start;
+    private final Integer windowLength;
     private ArrayList<Packet> packets;
-    private boolean allFinished;
     private static HashMap<Long,Boolean> window;
+    private boolean allFinished;
 
-    public SlidingWindow(Connection connection, ArrayList<Packet> packets){
+    public SlidingWindow(Connection connection){
+        this.connection = connection;
         start = 0;
         windowLength = 4;
-        this.packets = packets;
-        this.connection = connection;
+        packets = connection.getPackets();
         window = new HashMap<>();
 
-        for(long i=0;i<packets.size();i++){
-            window.put(i,false);
+        for(int i=0;i<packets.size();i++){
+            window.put(packets.get(i).getSequenceNumber(),false);
         }
 
         if(packets.size()<=windowLength){
@@ -37,9 +37,10 @@ public class SlidingWindow {
     }
 
     public void sendNextPacket(long sequenceNum){
+        //System.out.println(window);
         long end = start+windowLength-1;
         if(packets.get((int)start).getSequenceNumber()==sequenceNum){
-            while(end<packets.size()-1&&window.get(start)){
+            while(end<packets.size()-1&&window.get(packets.get((int)start).getSequenceNumber())){
                 start++;
                 end++;
                 new SendPacket(connection,this, packets.get((int)end)).start();
@@ -48,11 +49,12 @@ public class SlidingWindow {
         }
     }
 
-    public HashMap<Long, Boolean> getWindow() {
+
+    public static HashMap<Long, Boolean> getWindow() {
         return window;
     }
 
-    public void setWindow(HashMap<Long, Boolean> window) {
-        this.window = window;
+    public static void setWindow(HashMap<Long, Boolean> window) {
+        SlidingWindow.window = window;
     }
 }

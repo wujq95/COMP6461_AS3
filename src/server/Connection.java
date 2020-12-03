@@ -11,7 +11,7 @@ public class Connection extends Thread{
     private Packet packet;
     private boolean deBugging;
     private String fileDirectory;
-    private List<Packet> packets;
+    private ArrayList<Packet> packets;
     private  SocketAddress router;
     private Integer newPort;
     private long sequenceNum;
@@ -24,6 +24,8 @@ public class Connection extends Thread{
     private boolean receiveAll;
     private long startNum;
     private long endNum;
+    private boolean isFinished;
+    private long packetNum;
 
 
     public Connection(Packet packet,boolean deBugging,String fileDirectory, SocketAddress router){
@@ -79,6 +81,55 @@ public class Connection extends Thread{
         return false;
     }
 
+    public void makePackets(String msg,long packetNum,InetSocketAddress serverAddr){
+        this.packetNum = packetNum;
+        if(msg.length()<=1000){
+            Packet p = new Packet.Builder()
+                    .setType(0)
+                    .setSequenceNumber(packetNum)
+                    .setPortNumber(serverAddr.getPort())
+                    .setPeerAddress(serverAddr.getAddress())
+                    .setPayload(msg.getBytes())
+                    .create();
+            //sendWindow.put(packetNum,false);
+            packets.add(p);
+            return;
+        }
+        String firstData = msg.substring(0,1000);
+        msg = msg.substring(1000);
+        Packet firstP = new Packet.Builder()
+                .setType(4)
+                .setSequenceNumber(packetNum++)
+                .setPortNumber(serverAddr.getPort())
+                .setPeerAddress(serverAddr.getAddress())
+                .setPayload(firstData.getBytes())
+                .create();
+        //sendWindow.put(packetNum,false);
+        packets.add(firstP);
+        while(msg.length()>1000){
+            String majorData = msg.substring(0,1000);
+            msg = msg.substring(1000);
+            Packet majorP = new Packet.Builder()
+                    .setType(5)
+                    .setSequenceNumber(packetNum++)
+                    .setPortNumber(serverAddr.getPort())
+                    .setPeerAddress(serverAddr.getAddress())
+                    .setPayload(majorData.getBytes())
+                    .create();
+            //sendWindow.put(packetNum,false);
+            packets.add(majorP);
+        }
+        Packet lastP = new Packet.Builder()
+                .setType(6)
+                .setSequenceNumber(packetNum++)
+                .setPortNumber(serverAddr.getPort())
+                .setPeerAddress(serverAddr.getAddress())
+                .setPayload(msg.getBytes())
+                .create();
+        //sendWindow.put(packetNum,false);
+        packets.add(lastP);
+    }
+
 
     public DatagramChannel getChannel() {
         return channel;
@@ -112,11 +163,11 @@ public class Connection extends Thread{
         this.router = router;
     }
 
-    public List<Packet> getPackets() {
+    public ArrayList<Packet> getPackets() {
         return packets;
     }
 
-    public void setPackets(List<Packet> packets) {
+    public void setPackets(ArrayList<Packet> packets) {
         this.packets = packets;
     }
 
@@ -146,6 +197,24 @@ public class Connection extends Thread{
 
     public void setEndNum(long endNum) {
         this.endNum = endNum;
+    }
+
+
+    public boolean isFinished() {
+        return isFinished;
+    }
+
+    public void setFinished(boolean finished) {
+        isFinished = finished;
+    }
+
+
+    public long getPacketNum() {
+        return packetNum;
+    }
+
+    public void setPacketNum(long packetNum) {
+        this.packetNum = packetNum;
     }
 }
 

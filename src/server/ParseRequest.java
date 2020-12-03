@@ -8,14 +8,12 @@ import java.util.List;
 
 public class ParseRequest {
 
-    private Packet packet;
     private boolean deBugging;
     private String fileDirectory;
     private Connection connection;
     private SocketAddress router;
 
-    public ParseRequest(Packet packet,boolean deBugging, String fileDirectory,Connection connection,SocketAddress router){
-        this.packet = packet;
+    public ParseRequest(boolean deBugging, String fileDirectory,Connection connection,SocketAddress router){
         this.deBugging = deBugging;
         this.fileDirectory = fileDirectory;
         this.router = router;
@@ -124,7 +122,7 @@ public class ParseRequest {
         return request;
     }
 
-    public void sendResponse(Response response) throws IOException {
+    public String handleResponse(Response response) throws IOException {
         String payload = "";
         payload += "HTTP/1.0 " + response.getCode() +" " + response.getPhrase() + "\r\n";
 
@@ -135,12 +133,14 @@ public class ParseRequest {
             payload += "\r\n";
             payload += response.getData() + "\r\n";
         }
-        Packet resp = packet.toBuilder()
+
+        return payload;
+        /*Packet resp = packet.toBuilder()
                 .setType(5)
                 .setPayload(payload.getBytes())
                 .create();
         connection.getChannel().send(resp.toBuffer(), router);
-        System.out.println("Server has sent the reply of the data packet back to the client.");
+        System.out.println("Server has sent the reply of the data packet back to the client.");*/
     }
 
     public void readFile(Response response, File f) throws IOException {

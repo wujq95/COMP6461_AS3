@@ -1,4 +1,4 @@
-package client;
+package server;
 
 import java.io.IOException;
 
@@ -23,8 +23,8 @@ public class SendPacket extends Thread{
                     System.out.println("The packet with sequence number "+ packet.getSequenceNumber()+" is time out");
                     notFirstTime = true;
                 }
-                connection.getChannel().send(packet.toBuffer(), connection.getRouterAddr());
-                System.out.println("A data packet has been sent to the sever. The sequence number is "+packet.getSequenceNumber());
+                connection.getChannel().send(packet.toBuffer(), connection.getRouter());
+                System.out.println("A data packet has been sent to the client. The sequence number is "+packet.getSequenceNumber());
                 Thread.sleep(1000);
             } catch (IOException | InterruptedException e){
                 e.getStackTrace();
