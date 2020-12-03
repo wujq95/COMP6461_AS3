@@ -21,6 +21,7 @@ public class ReceivePacket extends Thread{
     private SocketAddress routerAddr;
     private long sequenceNum;
     private SlidingWindow slidingWindow;
+    private int count;
 
     public ReceivePacket(Connection connection, boolean deBugging, String fileDirectory, SocketAddress routerAddr, long sequenceNum){
         this.routerAddr = routerAddr;
@@ -28,11 +29,12 @@ public class ReceivePacket extends Thread{
         this.deBugging = deBugging;
         this.fileDirectory = fileDirectory;
         this.sequenceNum = sequenceNum;
+        count = 0;
     }
 
     @Override
     public void run() {
-        while(!connection.isFinished()){
+        while(true){
             try{
                 connection.getChannel().configureBlocking(false);
                 Selector selector = Selector.open();
@@ -41,7 +43,15 @@ public class ReceivePacket extends Thread{
 
                 Set<SelectionKey> keys = selector.selectedKeys();
                 if(keys.isEmpty()){
-                    System.out.println("No response after timeout");
+                    if(connection.isFinished()){
+                        count++;
+                        if(count>=4){
+                            System.out.println("Client has been closed");
+                            break;
+                        }
+                    }else{
+                        System.out.println("No response after timeout");
+                    }
                     continue;
                 }
                 ByteBuffer buf = ByteBuffer.allocate(Packet.MAX_LEN);
@@ -76,7 +86,6 @@ public class ReceivePacket extends Thread{
                         .setPeerAddress(packet.getPeerAddress())
                         .setPayload("".getBytes())
                         .create();
-                System.out.println("Server has sent the data ack back to the client");
                 try {
                     connection.getChannel().send(resPacket.toBuffer(),connection.getRouter());
                     ParseRequest parseRequest = new ParseRequest(deBugging,fileDirectory);
@@ -141,7 +150,7 @@ public class ReceivePacket extends Thread{
                 for(boolean value: slidingWindow.getWindow().values()){
                     if(!value) return;
                 }
-                System.out.println("Server has been closed");
+                System.out.println("Connection has been closed");
                 connection.setFinished(true);
             }
         }

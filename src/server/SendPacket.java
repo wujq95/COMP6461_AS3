@@ -23,6 +23,7 @@ public class SendPacket extends Thread{
 
     @Override
     public void run() {
+        System.out.println(slidingWindow.getWindow());
         while(!slidingWindow.getWindow().get(packet.getSequenceNumber())){
             try {
                 if(notFirstTime){
@@ -30,7 +31,7 @@ public class SendPacket extends Thread{
                 }
                 notFirstTime = true;
                 connection.getChannel().send(packet.toBuffer(), connection.getRouter());
-                System.out.println("A data packet has been sent to the client. The sequence number is "+packet.getSequenceNumber());
+                System.out.println("Server has sent the response to the client. The sequence number is "+packet.getSequenceNumber());
                 Thread.sleep(1000);
             } catch (IOException | InterruptedException e){
                 e.getStackTrace();

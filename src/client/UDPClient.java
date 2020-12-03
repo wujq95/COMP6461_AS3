@@ -22,7 +22,7 @@ public class UDPClient {
         ParseArgs parseArgs2 = new ParseArgs(new Connection());
         parseArgs2.parseArgs(args2);*/
 
-        args = new String[]{"httpc","get","-v", "http://localhost/data.json"};;
+        args = new String[]{"httpc","get","-v", "http://localhost/data2.json"};;
         ParseArgs parseArgs = new ParseArgs(new Connection());
         parseArgs.parseArgs(args);
 

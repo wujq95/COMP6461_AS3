@@ -28,7 +28,7 @@ public class ReceivePacket extends Thread{
     @Override
     public void run() {
         try{
-            while(!connection.isFinished()){
+            while(true){
                 List<String> res;
                 connection.getChannel().configureBlocking(false);
                 Selector selector = Selector.open();
@@ -37,9 +37,9 @@ public class ReceivePacket extends Thread{
 
                 Set<SelectionKey> keys = selector.selectedKeys();
                 if(keys.isEmpty()){
-                    if(connection.isLastPacket()){
+                    if(connection.isFinished()){
                         count++;
-                        if(count>=4){
+                        if(count>=2){
                             System.out.println("Client has been closed");
                             break;
                         }
@@ -63,10 +63,9 @@ public class ReceivePacket extends Thread{
                             .setPeerAddress(resp.getPeerAddress())
                             .setPayload("".getBytes())
                             .create();
-                    System.out.println("Data packet has been received");
-
-                    if(!connection.isLastPacket()){
-                        connection.getChannel().send(resPacket.toBuffer(),connection.getRouterAddr());
+                    System.out.println("Client has sent packet ack back to the server.");
+                    connection.getChannel().send(resPacket.toBuffer(),connection.getRouterAddr());
+                    if(!connection.isFinished()){
                         res = Arrays.asList(payload.split("\r\n"));
                         keys.clear();
                         connection.parseResponse(res);
@@ -102,7 +101,7 @@ public class ReceivePacket extends Thread{
                     if(connection.getStartNum()==-1||connection.getEndNum()==-1){
                         continue;
                     }
-                    if(connection.receiveAllPackets()&&(!connection.isLastPacket())){
+                    if(connection.receiveAllPackets()&&(!connection.isFinished())){
                         String resPayload = "";
                         Iterator<Map.Entry<Long, Packet>> it = connection.getReceivePackets().entrySet().iterator();
                         while(it.hasNext()) {

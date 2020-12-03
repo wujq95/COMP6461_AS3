@@ -25,8 +25,7 @@ public class Connection {
     private SocketAddress routerAddr;
     private InetSocketAddress serverAddr;
     private Request request;
-    private boolean finished;
-    private boolean lastPacket;
+    private boolean isFinished;
     private ArrayList<Packet> packets;
     private SlidingWindow slidingWindow;
     private TreeMap<Long, Packet> receivePackets;
@@ -335,7 +334,7 @@ public class Connection {
                 }
             }
         }
-        lastPacket = true;
+        isFinished = true;
     }
 
     /**
@@ -381,14 +380,6 @@ public class Connection {
         this.sequenceNum = sequenceNum;
     }
 
-    public boolean isFinished() {
-        return finished;
-    }
-
-    public void setFinished(boolean finished) {
-        this.finished = finished;
-    }
-
     public SocketAddress getRouterAddr() {
         return routerAddr;
     }
@@ -429,19 +420,19 @@ public class Connection {
         this.receivePackets = receivePackets;
     }
 
-    public boolean isLastPacket() {
-        return lastPacket;
-    }
-
-    public void setLastPacket(boolean lastPacket) {
-        this.lastPacket = lastPacket;
-    }
-
     public boolean isHasHandledPackets() {
         return hasHandledPackets;
     }
 
     public void setHasHandledPackets(boolean hasHandledPackets) {
         this.hasHandledPackets = hasHandledPackets;
+    }
+
+    public boolean isFinished() {
+        return isFinished;
+    }
+
+    public void setFinished(boolean finished) {
+        isFinished = finished;
     }
 }
