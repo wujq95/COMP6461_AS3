@@ -40,7 +40,7 @@ public class ReceivePacket extends Thread{
                     if(connection.isFinished()){
                         count++;
                         if(count>=2){
-                            System.out.println("Client has been closed");
+                            System.out.println("Client is closed");
                             break;
                         }
                     }else{
@@ -55,7 +55,7 @@ public class ReceivePacket extends Thread{
                 Packet resp = Packet.fromBuffer(buf);
                 String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
                 if(resp.getType()==0){
-                    System.out.println("Client has received the data packet.");
+                    System.out.println("Client received the data packet");
                     Packet resPacket = new Packet.Builder()
                             .setType(7)
                             .setSequenceNumber(resp.getSequenceNumber())
@@ -63,7 +63,7 @@ public class ReceivePacket extends Thread{
                             .setPeerAddress(resp.getPeerAddress())
                             .setPayload("".getBytes())
                             .create();
-                    System.out.println("Client has sent packet ack back to the server.");
+                    System.out.println("Client sent packet ack back to the server");
                     connection.getChannel().send(resPacket.toBuffer(),connection.getRouterAddr());
                     if(!connection.isFinished()){
                         res = Arrays.asList(payload.split("\r\n"));
@@ -73,12 +73,12 @@ public class ReceivePacket extends Thread{
                 }else if(resp.getType()==2&&Integer.parseInt(payload)==connection.getSequenceNum()+1){
                     connection.sendACK();
                 }else if(resp.getType()==3){
-                    System.out.println("A data packet ack has been received. The sequence num is "+resp.getSequenceNumber());
+                    System.out.println("Data packet ack is received. The sequence num is "+resp.getSequenceNumber());
                     SlidingWindow slidingWindow = connection.getSlidingWindow();
                     slidingWindow.getWindow().put(resp.getSequenceNumber(),true);
                     slidingWindow.sendNextPacket(resp.getSequenceNumber());
                 }else if(resp.getType()==4||resp.getType()==5||resp.getType()==6){
-                    System.out.println("Client has received the data packet. The sequence number is "+resp.getSequenceNumber());
+                    System.out.println("Client received the data packet. The sequence number is "+resp.getSequenceNumber());
                     connection.addReceivePackets(resp);
                     Packet resPacket = new Packet.Builder()
                             .setType(7)
@@ -87,7 +87,7 @@ public class ReceivePacket extends Thread{
                             .setPeerAddress(resp.getPeerAddress())
                             .setPayload("".getBytes())
                             .create();
-                    System.out.println("Client has sent the ack back to the server. The sequence number is "+resPacket.getSequenceNumber());
+                    System.out.println("Client sent ack back to the server. The sequence number is "+resPacket.getSequenceNumber());
                     try {
                         connection.getChannel().send(resPacket.toBuffer(),connection.getRouterAddr());
                     } catch (IOException e) {

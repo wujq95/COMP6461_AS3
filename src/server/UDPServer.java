@@ -17,7 +17,8 @@ public class UDPServer {
 
     public static void main(String[] args) throws IOException{
 
-        args = new String[]{"httpfs"};
+        //args = new String[]{"httpfs"};
+        //args = new String[]{"httpfs", "-v"};
 
         if(checkSyntax(args)){
             try (DatagramChannel channel = DatagramChannel.open()) {
@@ -35,8 +36,8 @@ public class UDPServer {
                     Packet packet = Packet.fromBuffer(buf);
                     buf.flip();
                     if(packet.getType()==1){
-                        System.out.println("Server has received the handshake syn.");
-                        new Connection(packet,deBugging,"src/"+fileDirectory,router).start();
+                        System.out.println("Debugging Message: "+"Handshake1: Server received syn");
+                        new Connection(packet,deBugging,fileDirectory,router).start();
                     }
                 }
             }

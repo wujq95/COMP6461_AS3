@@ -30,7 +30,7 @@ public class SendPacket extends Thread{
                 }
                 notFirstTime = true;
                 connection.getChannel().send(packet.toBuffer(), connection.getRouterAddr());
-                System.out.println("A data packet has been sent to the sever. The sequence number is "+packet.getSequenceNumber());
+                System.out.println("A data packet sent to the sever. The sequence number is "+packet.getSequenceNumber());
                 Thread.sleep(1000);
             } catch (IOException | InterruptedException e){
                 e.getStackTrace();

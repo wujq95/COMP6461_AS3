@@ -46,11 +46,11 @@ public class ReceivePacket extends Thread{
                     if(connection.isFinished()){
                         count++;
                         if(count>=4){
-                            System.out.println("Client has been closed");
+                            connection.printDebuggingMsg("Connection is closed");
                             break;
                         }
                     }else{
-                        System.out.println("No response after timeout");
+                        connection.printDebuggingMsg("No response after timeout");
                     }
                     continue;
                 }
@@ -72,13 +72,13 @@ public class ReceivePacket extends Thread{
      */
     private void packetHandle(Packet packet){
         if(packet.getType()==3&&packet.getSequenceNumber()==sequenceNum+1){
-            System.out.println("Server has received the handshake ack packet.");
+            connection.printDebuggingMsg("Handshake3: server received ack");
             connection.setConnected(true);
             return;
         }
         if(connection.isConnected()){
             if(packet.getType()==0){
-                System.out.println("Server has received the data packet.");
+                connection.printDebuggingMsg("Server received the data packet");
                 Packet resPacket = new Packet.Builder()
                         .setType(3)
                         .setSequenceNumber(packet.getSequenceNumber())
@@ -98,9 +98,8 @@ public class ReceivePacket extends Thread{
                 }catch(Exception e){
                     e.printStackTrace();
                 }
-
             }else if(packet.getType()==4||packet.getType()==5||packet.getType()==6){
-                System.out.println("Server has received the data packet. The sequence number is "+packet.getSequenceNumber());
+                connection.printDebuggingMsg("Server received "+packet.getSequenceNumber()+" data packet");
                 connection.addReceivePackets(packet);
                 Packet resPacket = new Packet.Builder()
                         .setType(3)
@@ -109,7 +108,7 @@ public class ReceivePacket extends Thread{
                         .setPeerAddress(packet.getPeerAddress())
                         .setPayload("".getBytes())
                         .create();
-                System.out.println("Server has sent the ack back to the client. The sequence number is "+resPacket.getSequenceNumber());
+                connection.printDebuggingMsg("Server sent "+packet.getSequenceNumber()+" ack");
                 try {
                     connection.getChannel().send(resPacket.toBuffer(),connection.getRouter());
                 } catch (IOException e) {
@@ -125,7 +124,6 @@ public class ReceivePacket extends Thread{
                 }
                 if(connection.receiveAllPackets()){
                     try {
-                    // 加上多线程
                         ParseRequest parseRequest = new ParseRequest(deBugging,fileDirectory);
                         String payload = "";
                         Iterator<Map.Entry<Long, Packet>> it = connection.getReceivePackets().entrySet().iterator();
@@ -144,25 +142,16 @@ public class ReceivePacket extends Thread{
 
                 }
             }else if(packet.getType()==7){
-                System.out.println("A data packet ack has been received. The sequence num is "+packet.getSequenceNumber());
+                connection.printDebuggingMsg("Server received "+packet.getSequenceNumber()+" ack");
                 slidingWindow.getWindow().put(packet.getSequenceNumber(),true);
                 slidingWindow.sendNextPacket(packet.getSequenceNumber());
                 for(boolean value: slidingWindow.getWindow().values()){
                     if(!value) return;
                 }
-                System.out.println("Connection has been closed");
                 connection.setFinished(true);
             }
         }
     }
 
-    /**
-     * print deBugging Msg
-     * @param string
-     */
-    public void printDebuggingMsg(String string){
-        if(deBugging){
-            System.out.println("Debugging Message: "+string);
-        }
-    }
+
 }

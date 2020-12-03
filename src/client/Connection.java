@@ -104,7 +104,7 @@ public class Connection {
         do{
             channel.send(packet.toBuffer(), routerAddr);
             Thread.sleep(500);
-            System.out.println("Client has sent handshake syn to the server");
+            System.out.println("handshake1: client sent syn to server");
         } while(!receiveSYN_ACK());
     }
 
@@ -132,7 +132,7 @@ public class Connection {
         Packet resp = Packet.fromBuffer(buf);
         String payload = new String(resp.getPayload(), StandardCharsets.UTF_8);
         if(resp.getType()==2&&Integer.parseInt(payload)==sequenceNum+1){
-            System.out.println("Client has received a handshake syn and ack from the sever");
+            System.out.println("Handshake2: Client received syn and ack from the sever");
             serverAddr = new InetSocketAddress(resp.getPeerAddress(), resp.getPeerPort());
             ackNum = resp.getSequenceNumber()+1;
             keys.clear();
@@ -154,7 +154,7 @@ public class Connection {
                 .setPayload("".getBytes())
                 .create();
         channel.send(packet.toBuffer(), routerAddr);
-        System.out.println("Client has sent handshake ack back to the server. ");
+        System.out.println("Handshake3: Client sent ack back to the server");
     }
 
     /**
@@ -316,7 +316,7 @@ public class Connection {
             }
             printWriter.close();
             fileWriter.close();
-            System.out.println("Response has been stored into the file: "+request.getOutPutFile());
+            System.out.println("Response is stored to file: "+request.getOutPutFile());
         }else{
             if(request.isVerbose()){
                 for(String line:res){

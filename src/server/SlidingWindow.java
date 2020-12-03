@@ -33,6 +33,10 @@ public class SlidingWindow {
         }
     }
 
+    /**
+     * send packet
+     * @param sequenceNum
+     */
     public void sendNextPacket(long sequenceNum){
         long end = start+windowLength-1;
         if(packets.get((int)start).getSequenceNumber()==sequenceNum){

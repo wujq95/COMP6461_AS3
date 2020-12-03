@@ -1,6 +1,6 @@
 Server编译和启动
 1. cd /Users/wujiaqi/IdeaProjects/COMP6461_Router/src/server (修改对应路径)
-2. javac UDPServer.java Packet.java Request.java Response.java serverThread.java
+2. javac UDPServer.java Packet.java Request.java Response.java Connection.java ParseRequest.java ReceivePacket.java SendPacket.java SlidingWindow.java
 3. cd /Users/wujiaqi/IdeaProjects/COMP6461_Router/src
 4. java server/UDPServer httpfs
 5. java server/UDPServer httpfs -v

@@ -66,7 +66,7 @@ public class Connection extends Thread{
         do{
             try {
                 channel.send(synAck.toBuffer(),routerAddr);
-                System.out.println("Server has sent handshake ack and syn back to the client. ");
+                printDebuggingMsg("Handshake2: Server sent ack and syn back to the client");
                 Thread.sleep(500);
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
@@ -133,6 +133,16 @@ public class Connection extends Thread{
                 .setPayload(msg.getBytes())
                 .create();
         packets.add(lastP);
+    }
+
+    /**
+     * print deBugging Msg
+     * @param string
+     */
+    public void printDebuggingMsg(String string){
+        if(deBugging){
+            System.out.println("Debugging Message: "+string);
+        }
     }
 
 
