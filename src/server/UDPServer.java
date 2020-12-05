@@ -17,9 +17,6 @@ public class UDPServer {
 
     public static void main(String[] args) throws IOException{
 
-        //args = new String[]{"httpfs"};
-        //args = new String[]{"httpfs", "-v"};
-
         if(checkSyntax(args)){
             try (DatagramChannel channel = DatagramChannel.open()) {
                 channel.bind(new InetSocketAddress(port));

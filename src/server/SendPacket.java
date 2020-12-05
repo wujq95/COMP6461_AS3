@@ -31,7 +31,7 @@ public class SendPacket extends Thread{
                 notFirstTime = true;
                 connection.getChannel().send(packet.toBuffer(), connection.getRouter());
                 connection.printDebuggingMsg("Server sent "+packet.getSequenceNumber()+" packet to the client");
-                Thread.sleep(600);
+                Thread.sleep(200);
             } catch (IOException | InterruptedException e){
                 e.getStackTrace();
             }

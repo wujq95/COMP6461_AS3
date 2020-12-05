@@ -1,6 +1,7 @@
 package server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
@@ -23,7 +24,6 @@ public class Connection extends Thread{
     private long startNum;
     private long endNum;
     private boolean isFinished;
-    private long packetNum;
 
 
     public Connection(Packet packet,boolean deBugging,String fileDirectory, SocketAddress routerAddr){
@@ -91,7 +91,6 @@ public class Connection extends Thread{
      * @param serverAddr
      */
      void makePackets(String msg,long packetNum,InetSocketAddress serverAddr){
-        this.packetNum = packetNum;
         if(msg.length()<=1000){
             Packet p = new Packet.Builder()
                     .setType(0)
@@ -223,13 +222,12 @@ public class Connection extends Thread{
         isFinished = finished;
     }
 
-
-    public long getPacketNum() {
-        return packetNum;
+    public Packet getPacket() {
+        return packet;
     }
 
-    public void setPacketNum(long packetNum) {
-        this.packetNum = packetNum;
+    public void setPacket(Packet packet) {
+        this.packet = packet;
     }
 }
 

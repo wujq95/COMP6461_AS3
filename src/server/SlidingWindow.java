@@ -9,7 +9,7 @@ public class SlidingWindow {
     private long start;
     private final Integer windowLength;
     private ArrayList<Packet> packets;
-    private static HashMap<Long,Boolean> window;
+    private HashMap<Long,Boolean> window;
 
     public SlidingWindow(Connection connection){
         this.connection = connection;
@@ -49,11 +49,9 @@ public class SlidingWindow {
     }
 
 
-    public static HashMap<Long, Boolean> getWindow() {
+    public HashMap<Long, Boolean> getWindow() {
         return window;
     }
 
-    public static void setWindow(HashMap<Long, Boolean> window) {
-        SlidingWindow.window = window;
-    }
+
 }

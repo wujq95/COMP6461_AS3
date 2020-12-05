@@ -30,6 +30,7 @@ public class Connection {
     private SlidingWindow slidingWindow;
     private TreeMap<Long, Packet> receivePackets;
     private boolean hasHandledPackets;
+    private Integer newPort;
 
 
     /**
@@ -38,6 +39,7 @@ public class Connection {
     public Connection(){
         sequenceNum = (long) (Math.random() * 100000000);
         routerAddr = new InetSocketAddress("localhost", 3000);
+        newPort = (int)(Math.random()*500 + 8000);
         packets = new ArrayList<>();
         receivePackets = new TreeMap<>();
         packetNum = 0;
@@ -46,6 +48,7 @@ public class Connection {
 
         try {
             channel = DatagramChannel.open();
+            channel.bind(new InetSocketAddress(newPort));
         }catch (IOException e){
             e.printStackTrace();
         }
@@ -104,7 +107,7 @@ public class Connection {
         do{
             channel.send(packet.toBuffer(), routerAddr);
             Thread.sleep(500);
-            System.out.println("handshake1: client sent syn to server");
+            System.out.println("Handshake1: client sent syn to server");
         } while(!receiveSYN_ACK());
     }
 
