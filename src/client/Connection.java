@@ -31,8 +31,7 @@ public class Connection {
     private TreeMap<Long, Packet> receivePackets;
     private boolean hasHandledPackets;
     private Integer newPort;
-
-
+    
     /**
      * constructor method
      */
