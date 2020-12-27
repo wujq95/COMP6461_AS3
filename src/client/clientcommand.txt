@@ -1,16 +1,12 @@
-Client编译和启动
-1. cd /Users/wujiaqi/IdeaProjects/COMP6461_Router/src/client (修改对应路径)
-2. javac UDPClient.java Packet.java Request.java Connection.java ParseArgs.java ReceivePacket.java SendPacket.java SlidingWindow.java
-3. cd /Users/wujiaqi/IdeaProjects/COMP6461_Router/src (需要返回上一级)
-4. java client/UDPClient httpc help
-5. java client/UDPClient httpc get -v 'http://localhost/'
-6. java client/UDPClient httpc get -v 'http://localhost/data.json'
-7. java client/UDPClient httpc get -v 'http://localhost/data.json' & java client/UDPClient httpc get -v 'http://localhost/data.json'
-8. java client/UDPClient httpc post -v 'http://localhost/'
-9. java client/UDPClient httpc post -v -f 'test/Info.txt' 'http://localhost/data.json'
-10. java client/UDPClient httpc post -v -f 'test/Info.txt' 'http://localhost/data.json' & java client/UDPClient httpc get -v 'http://localhost/data.json'
-11. java client/UDPClient httpc post -v -d '{"Assignment": 18}' 'http://localhost/data.json'
-12. java client/UDPClient httpc post -v -d '{"Assignment": 18}' 'http://localhost/data.json' & java client/UDPClient httpc post -v -d '{"Assignment": 5}' 'http://localhost/data.json'
-13. java client/UDPClient httpc get -v 'http://localhost/data.json' & java client/UDPClient httpc get -v 'http://localhost/data.json'
-14. java client/UDPClient httpc get -v 'http://localhost/data.json' & java client/UDPClient httpc post -v -d '{"Assignment": 5}' 'http://localhost/data.json'
-15. java client/UDPClient httpc post -v -d '{"Assignment": 1}' 'http://localhost/data.json' & java client/UDPClient httpc post -v -d '{"Assignment": 5}' 'http://localhost/data.json'
+1. java client/UDPClient httpc help
+2. java client/UDPClient httpc get -v 'http://localhost/'
+3. java client/UDPClient httpc get -v 'http://localhost/data.json'
+4. java client/UDPClient httpc get -v 'http://localhost/data.json' & java client/UDPClient httpc get -v 'http://localhost/data.json'
+5. java client/UDPClient httpc post -v 'http://localhost/'
+6. java client/UDPClient httpc post -v -f 'test/Info.txt' 'http://localhost/data.json'
+7. java client/UDPClient httpc post -v -f 'test/Info.txt' 'http://localhost/data.json' & java client/UDPClient httpc get -v 'http://localhost/data.json'
+8. java client/UDPClient httpc post -v -d '{"Assignment": 18}' 'http://localhost/data.json'
+9. java client/UDPClient httpc post -v -d '{"Assignment": 18}' 'http://localhost/data.json' & java client/UDPClient httpc post -v -d '{"Assignment": 5}' 'http://localhost/data.json'
+10. java client/UDPClient httpc get -v 'http://localhost/data.json' & java client/UDPClient httpc get -v 'http://localhost/data.json'
+11. java client/UDPClient httpc get -v 'http://localhost/data.json' & java client/UDPClient httpc post -v -d '{"Assignment": 5}' 'http://localhost/data.json'
+12. java client/UDPClient httpc post -v -d '{"Assignment": 1}' 'http://localhost/data.json' & java client/UDPClient httpc post -v -d '{"Assignment": 5}' 'http://localhost/data.json'
