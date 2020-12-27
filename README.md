@@ -1,15 +1,10 @@
 # COMP6461_Project
 
 ## Introduction
-This project is the implementation of Web server and client based on the principle of HTTP protocol. It can realize the server's request, response, redirection, and other functions. Besides, the server supports multi-threading and uses Select Repeat Automatic Repeat-Request(ARQ) algorithms to guarantee packet transmission over unreliable network links.
+This project is the implementation of Web server and client based on the principle of HTTP protocol. It can realize the server's request, response, redirection, and other functions. Besides, the server supports multi-threading and uses Select Repeat Automatic Repeat-Request(ARQ) algorithm to guarantee packet transmission over unreliable network links.
 
-## Automatic Repeat Request
-Automatic repeat request (ARQ), also known as automatic repeat query, is an error-control method for data transmission that uses acknowledgements (messages sent by the receiver indicating that it has correctly received a packet) and timeouts (specified periods of time allowed to elapse before an acknowledgment is to be received) to achieve reliable data transmission over an unreliable communication channel. If the sender does not receive an acknowledgment before the timeout, it usually re-transmits the packet until the sender receives an acknowledgment or exceeds a predefined number of retransmissions.
-
-The types of ARQ protocols include Stop-and-wait ARQ, Go-Back-N ARQ, and Selective Repeat ARQ/Selective Reject ARQ. All three protocols usually use some form of sliding window protocol to help the transmitter determine which (if any) packets need to be retransmitted. These protocols reside in the data link or transport layers (layers 2 and 4) of the OSI model[1].
-
-## Select Repeat
-Selective Repeat is part of the automatic repeat-request (ARQ). With selective repeat, the sender sends a number of frames specified by a window size even without the need to wait for individual ACK from the receiver as in Go- Back-N ARQ. The receiver may selectively reject a single frame, which may be retransmitted alone; this contrasts with other forms of ARQ, which must send every frame from that point again. The receiver accepts out-of-order frames and buffers them. The sender individually retransmits frames that have timed out[2].
+## Select Repeat Algorithm
+Selective Repeat is part of the automatic repeat-request (ARQ). With selective repeat, the sender sends a number of frames specified by a window size even without the need to wait for individual ACK from the receiver as in Go- Back-N ARQ. The receiver may selectively reject a single frame, which may be retransmitted alone; this contrasts with other forms of ARQ, which must send every frame from that point again. The receiver accepts out-of-order frames and buffers them. The sender individually retransmits frames that have timed out[1].
 
 ## Client Command Parameters
 1. -v: Enable a verbose output
@@ -51,6 +46,5 @@ Start the client
     java client/UDPClient httpc help
 
 ## References
-[1] Automatic repeat request. https://en.wikipedia.org/wiki/Automatic_repeat_request  
-[2] Selective Repeat. https://en.wikipedia.org/wiki/Selective_Repeat_ARQ.
+[1] Selective Repeat. https://en.wikipedia.org/wiki/Selective_Repeat_ARQ.
  
