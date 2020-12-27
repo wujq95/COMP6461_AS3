@@ -34,6 +34,21 @@ Selective Repeat is part of the automatic repeat-request (ARQ). With selective r
 3. httpfs -v -p 8080 -d 'file/inner'
 
 ## Run the program
+    git clone https://github.com/wujq95/COMP6461_Project.git
+Start the server
+
+    cd COMP6461_Project
+    cd src/server
+    javac UDPServer.java Packet.java Request.java Response.java Connection.java ParseRequest.java ReceivePacket.java SendPacket.java SlidingWindow.java
+    cd ..
+    java server/UDPServer httpfs -v
+Start the client
+
+    cd COMP6461_Project
+    cd src/client
+    javac UDPClient.java Packet.java Request.java Connection.java ParseArgs.java ReceivePacket.java SendPacket.java SlidingWindow.java
+    cd ..
+    java client/UDPClient httpc help
 
 ## References
 [1] Automatic repeat request. https://en.wikipedia.org/wiki/Automatic_repeat_request  
